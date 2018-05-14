@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chicago Traffic</title>
+
+    <link rel="shortcut icon" type="image/png" href="{{url_for('static', filename='traffic.png')}}"/>
+
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
+    <link rel= "stylesheet" type= "text/css" href= "{{ url_for('static',filename='css/style.css') }}">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  </head>
+
+  <body>
+  <div>
+      <nav>
+        <div class="nav-wrapper blue">
+            <div class="container">
+          <a href="#" class="brand-logo">Chicago Traffic</a>
+          <ul id="nav-mobile" class="right hide-on-med-and-down">
+            <li><a href="/">Map</a></li>
+            <li><a href="dashboard">Dashboard</a></li>
+            <li><a href="architecture">Architecture</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <div id="charts" style="padding: 20px 10px;" class="container">
+      <h2 id="title"></h2>
+      <p>
+          Average speed readings from the last 15 minutes on road segments
+      </p>
+      <a class="waves-effect waves-light btn-large blue" href="https://developers.google.com/maps/"><i class="material-icons right">map</i>Maps API</a>
+  </div>
+
+  <div class=" grey lighten-4">
+  <div class="container" >
+      <div class="row">
+          <div class="col s12">&nbsp</div>
+
+          <div class="col s12">
+                <div class="card" id="maparea" style="height:1100px">
+                  <div class="card-content white-text">
+                    <div id="map" style="height:1000px"></div>
+                    <div class="card-action">
+                      <a href="#" id="slow"><font color="#E74C3C">Less than 20 mph</font></a>
+                      <a href="#" id="medium"><font color="#F1C40F">Between 20 and 30 mph</font></a>
+                      <a href="#" id="fast"><font color="#2ECC71">More than 30 mph</font></a>
+                    </div>
+                </div>
+              </div>
+          </div>
+  </div>
+  </div>
+  </div>
+
+    <script>
+
+    function showRed(){
+        if (red[0].map === map) {
+            for (i = 0; i < red.length; i++) {
+                red[i].setMap(null)
+                console.log(red[i])
+            }
+        } else {
+            for (i = 0; i < red.length; i++) {
+                red[i].setMap(map)
+                console.log(red[i])
+            }
+        }
+    }
+
+    function showYellow(){
+        if (yellow[0].map === map) {
+            for (i = 0; i < yellow.length; i++) {
+                yellow[i].setMap(null)
+                console.log(yellow[i])
+            }
+        } else {
+            for (i = 0; i < yellow.length; i++) {
+                yellow[i].setMap(map)
+                console.log(yellow[i])
+            }
+        }
+    }
+
+    function showGreen(){
+        if (green[0].map === map) {
+            for (i = 0; i < green.length; i++) {
+                green[i].setMap(null)
+            }
+        } else {
+            for (i = 0; i < green.length; i++) {
+                green[i].setMap(map)
+            }
+        }
+    }
+
+    var map;
+    var green = [];
+    var yellow = [];
+    var red = [];
+    function initMap() {
+
+        var uluru = {lat: 41.8735599, lng: -87.6293282};
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 12.5,
+          center: uluru
+        });
+
+        fetch('https://data.cityofchicago.org/resource/8v9j-bter.json')
+            .then(function(response) {
+            return response.json();
+        })
+            .then(function(data) {
+
+            for (i = 0; i < data.length; i++) {
+                    var color;
+                    var speed = data[i]['_traffic']
+                    if (speed === -1) {
+                        color = "#BDC3C7"
+                        var line = new google.maps.Polyline({
+                            path: [
+                                new google.maps.LatLng(data[i]['_lif_lat'], data[i]['start_lon']),
+                                new google.maps.LatLng(data[i]['_lit_lat'], data[i]['_lit_lon'])
+                            ],
+                            strokeColor: color,
+                            strokeOpacity: 1.0,
+                            strokeWeight: 3
+                        });
+                    } else if (speed > -1 && speed < 20) {
+                        color = "#E74C3C"
+                        red.push(new google.maps.Polyline({
+                            path: [
+                                new google.maps.LatLng(data[i]['_lif_lat'], data[i]['start_lon']),
+                                new google.maps.LatLng(data[i]['_lit_lat'], data[i]['_lit_lon'])
+                            ],
+                            strokeColor: color,
+                            strokeOpacity: 1.0,
+                            strokeWeight: 3
+                        }))
+                    } else if (speed > 19 && speed < 30) {
+                        color = "#F1C40F"
+                        yellow.push(new google.maps.Polyline({
+                            path: [
+                                new google.maps.LatLng(data[i]['_lif_lat'], data[i]['start_lon']),
+                                new google.maps.LatLng(data[i]['_lit_lat'], data[i]['_lit_lon'])
+                            ],
+                            strokeColor: color,
+                            strokeOpacity: 1.0,
+                            strokeWeight: 3
+                        }))
+                    } else {
+                        color = "#2ECC71"
+                        green.push(new google.maps.Polyline({
+                            path: [
+                                new google.maps.LatLng(data[i]['_lif_lat'], data[i]['start_lon']),
+                                new google.maps.LatLng(data[i]['_lit_lat'], data[i]['_lit_lon'])
+                            ],
+                            strokeColor: color,
+                            strokeOpacity: 1.0,
+                            strokeWeight: 3
+                        }))
+                    }
+
+
+                }
+                document.getElementById("title").textContent= "Traffic Map - Updated " + data[0]['_last_updt'].slice(0,19) + ' CDT';
+                showRed();
+                showYellow();
+                showGreen();
+            });
+            document.getElementById('slow').addEventListener('click', showRed);
+            document.getElementById('medium').addEventListener('click', showYellow);
+            document.getElementById('fast').addEventListener('click', showGreen);
+
+        }
+
+
+
+    </script>
+
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAu3-00fcoXjHePR4asbDLn-cwaNoeARMo&callback=initMap">
+    </script>
+
+
+
+    <!--JavaScript at end of body for optimized loading-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
+
+  </body>
+</html>
